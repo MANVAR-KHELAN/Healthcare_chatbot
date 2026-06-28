@@ -3,3 +3,6 @@ groq
 werkzeug
 PyPDF2
 python-docx
+waitress
+python-dotenv
+pymongo

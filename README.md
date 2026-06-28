@@ -1,27 +1,26 @@
-# 🩺 Healthcare Chatbot
+# Healthcare Chatbot
 
-An AI-powered, multilingual chatbot for disease prediction and lab report explanation using Python, Flask, and a RAG (Retrieval-Augmented Generation) model.
+Production-ready, multilingual healthcare chatbot built with Flask and Groq.
 
-## 🚀 Features:
+## Architecture
 
-- 🤖 AI-based disease prediction from user symptoms
+- `src/healthcare_chatbot/core`: app factory, configuration, lifecycle hooks
+- `src/healthcare_chatbot/api/routes`: HTTP routes by domain (auth, chat, dashboard, health)
+- `src/healthcare_chatbot/services`: AI and report-processing business logic
+- `src/healthcare_chatbot/repositories`: storage adapters (MongoDB + JSON fallback)
+- `src/healthcare_chatbot/utils`: shared helpers
+- `tests`: unit and integration tests
+- `config`: environment config overlays
 
-- 🌐 Multilingual support for broader accessibility
+## Runtime Entry Points
 
-- 📄 Lab report interpretation in layman's terms
+- `app.py`: local development runner
+- `wsgi.py`: WSGI production entrypoint
+- `asgi.py`: ASGI entrypoint
 
-- 🔄 Real-time response generation using RAG model
+## Quick Start
 
-- 🌐 Deployed on Flask for easy web access
-
-
-## 🛠️ Tech Stack
-
-- Backend: Python, Flask
-
-- AI Model: Retrieval-Augmented Generation (RAG)
-
-- NLP: Custom Language Models
-
-- Frontend: HTML, CSS (via Flask templates)
+1. Copy `.env.example` to `.env` and fill secrets.
+2. Install dependencies from `requirements.txt`.
+3. Run `python app.py`.
 

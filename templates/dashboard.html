@@ -1,0 +1,527 @@
+﻿<!DOCTYPE html>
+<html lang="{{ language or 'en' }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">Healthcare Dashboard</title>
+  <link rel="stylesheet" href="{{ static_asset('dashboard.css') }}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="scene-backdrop" aria-hidden="true">
+    <span class="orb orb-one"></span>
+    <span class="orb orb-two"></span>
+    <span class="orb orb-three"></span>
+    <span class="grid-plane"></span>
+  </div>
+  <div class="shell">
+    <aside class="left-rail conversation-rail reveal-on-load">
+      <div class="rail-brand">
+        <i class="far fa-heart"></i>
+        <span id="rail-brand-title">HealthCare AI</span>
+      </div>
+      <button id="new-conversation-btn" class="new-conv-btn" type="button" onclick="startNewConversation()">
+        <i class="fas fa-plus"></i>
+        <span id="new-conversation-label">New Conversation</span>
+      </button>
+      <div class="recent-head">
+        <p id="recent-conversations-title">Recent Conversations</p>
+      </div>
+      <div id="conversation-list" class="conversation-list">
+        <button type="button" class="conversation-item active" data-cid="all" onclick="setConversationFilter('all', this)">
+          <div id="all-conversations-label" class="conversation-title">All Conversations</div>
+          <div id="all-conversations-meta" class="conversation-meta">Show all messages</div>
+        </button>
+        {% for chat in conversations[:8] %}
+        <button
+          type="button"
+          class="conversation-item"
+          data-cid="{{ chat.conversation_id }}"
+          onclick="openConversation('{{ chat.conversation_id }}')">
+          <div class="conversation-title">{{ chat.preview or ('Conversation ' ~ loop.index) }}</div>
+          <div class="conversation-meta" data-language="{{ chat.language }}" data-count="{{ chat.message_count }}">#{{ chat.language }} | {{ chat.message_count }} msgs</div>
+        </button>
+        {% endfor %}
+        {% if not conversations %}
+        <p id="no-recents" class="muted no-recents">No recent conversations.</p>
+        {% endif %}
+      </div>
+      <div class="rail-footer">
+        <button id="rail-chat-btn" class="rail-btn" onclick="window.location.href='/chat'" title="Chat"><i class="fas fa-comments"></i></button>
+        <button id="rail-logout-btn" class="rail-btn" onclick="window.location.href='/logout'" title="Logout"><i class="fas fa-right-from-bracket"></i></button>
+      </div>
+    </aside>
+
+    <main class="dashboard-wrap">
+      <header class="topbar tilt-panel reveal-on-load" data-tilt>
+        <div class="search">
+          <i class="fas fa-magnifying-glass"></i>
+          <input id="search" type="text" placeholder="Search messages" oninput="applyFilters()" />
+        </div>
+        <div class="topbar-meta">
+          <div class="meta-chip">
+            <span id="dashboard-highlight-label">Active Conversations</span>
+            <strong id="dashboard-highlight-value">{{ stats.total_conversations }}</strong>
+          </div>
+          <div class="meta-chip meta-alert">
+            <span id="dashboard-alert-label">Critical Alerts</span>
+            <strong>{{ stats.emergency_mentions }}</strong>
+          </div>
+        </div>
+        <div class="user-pill">
+          <i class="fas fa-user"></i>
+          <span>{{ user_name or 'User' }}</span>
+        </div>
+      </header>
+
+      <section class="grid-layout">
+        <article class="welcome-card card tilt-panel reveal-on-scroll" data-tilt>
+          <p id="welcome-kicker" class="section-kicker">Health Overview</p>
+          <div id="welcome-hello" class="hello">Hello,</div>
+          <h1>{{ user_name or 'Health User' }}</h1>
+          <p id="welcome-subtitle">Your personal healthcare command center.</p>
+          <div class="quick-actions">
+            <button id="open-chat-btn" onclick="window.location.href='/chat'">
+              <i class="fas fa-stethoscope"></i>
+              <span>Open Chat</span>
+            </button>
+            <button id="export-btn" onclick="exportData()">
+              <i class="fas fa-download"></i>
+              <span>Export</span>
+            </button>
+          </div>
+        </article>
+
+        <article class="metrics card tilt-panel reveal-on-scroll" data-tilt>
+          <p id="metrics-kicker" class="section-kicker">Performance Snapshot</p>
+          <h2 id="metrics-title">Health Metrics</h2>
+          <div class="metric-row">
+            <div class="metric blue">
+              <span id="m-total">Total Msg</span>
+              <strong>{{ stats.total_messages }}</strong>
+            </div>
+            <div class="metric red">
+              <span id="m-conversations">Conversations</span>
+              <strong>{{ stats.total_conversations }}</strong>
+            </div>
+            <div class="metric green">
+              <span id="m-labs">Lab Reports</span>
+              <strong>{{ stats.lab_reports }}</strong>
+            </div>
+            <div class="metric purple">
+              <span id="m-alerts">Alerts</span>
+              <strong>{{ stats.emergency_mentions }}</strong>
+            </div>
+          </div>
+        </article>
+
+        <article class="chart-card card tilt-panel reveal-on-scroll" data-tilt>
+          <div class="chart-head">
+            <div>
+              <p id="symptom-kicker" class="section-kicker">Trend Intelligence</p>
+              <h2 id="symptom-title">Symptom Frequency</h2>
+            </div>
+            <select id="roleFilter" onchange="applyFilters()">
+              <option id="role-all" value="all">All Roles</option>
+              <option id="role-user" value="user">User</option>
+              <option id="role-assistant" value="assistant">Assistant</option>
+            </select>
+          </div>
+          {% if top_symptoms %}
+          <div class="bars">
+            {% for s in top_symptoms %}
+            <div class="bar-item">
+              <span>{{ s.name }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" style="width: {{ (s.count * 10) if (s.count * 10) < 100 else 100 }}%"></div>
+              </div>
+              <strong>{{ s.count }}</strong>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p id="no-symptoms" class="muted">No symptom trends yet. Start chatting to build metrics.</p>
+          {% endif %}
+        </article>
+
+        <article class="ai-card card tilt-panel reveal-on-scroll" data-tilt>
+          <p id="ai-kicker" class="section-kicker">Smart Recommendations</p>
+          <h2 id="ai-title">Wellness AI Chatbot</h2>
+          <ul>
+            {% for rec in recommendations %}
+            <li><i class="fas fa-circle-check"></i> {{ rec }}</li>
+            {% endfor %}
+          </ul>
+          <button id="go-chatbot-btn" class="open-chat" onclick="window.location.href='/chat'">
+            <i class="fas fa-robot"></i>
+            <span>Go to Chatbot</span>
+          </button>
+        </article>
+      </section>
+
+      <section class="card table-card tilt-panel reveal-on-scroll" data-tilt>
+        <p id="history-kicker" class="section-kicker">Session Archive</p>
+        <h2 id="history-title">Conversation History</h2>
+        {% if conversations %}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th id="th-id">ID</th>
+                <th id="th-language">Language</th>
+                <th id="th-messages">Messages</th>
+                <th id="th-start">Start</th>
+                <th id="th-last">Last Update</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for chat in conversations %}
+              <tr>
+                <td>{{ chat.conversation_id[:8] }}</td>
+                <td>{{ chat.language }}</td>
+                <td>{{ chat.message_count }}</td>
+                <td>{{ chat.start_time }}</td>
+                <td>{{ chat.end_time }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p id="no-conversations" class="muted">No conversations found.</p>
+        {% endif %}
+      </section>
+
+      <section id="messagesList" class="message-list card tilt-panel reveal-on-scroll" data-tilt>
+        <p id="messages-kicker" class="section-kicker">Message Timeline</p>
+        {% for row in records %}
+        <article class="message-item reveal-on-scroll" data-role="{{ row.role }}" data-text="{{ row.content_text|lower }}" data-cid="{{ row.conversation_id or 'unknown' }}">
+          <div class="meta">
+            <span class="badge {{ row.role }}">{{ row.role }}</span>
+            <span>{{ row.message_type }}</span>
+            <span>{{ row.created_at }}</span>
+          </div>
+          <p>{{ row.content_text }}</p>
+        </article>
+        {% endfor %}
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const dashboardLang = "{{ language or 'english' }}";
+    let selectedConversationId = "all";
+    const dashboardText = {
+      english: {
+        title: "Healthcare Dashboard",
+        appName: "HealthCare AI",
+        chat: "Chat",
+        logout: "Logout",
+        newConversation: "New Conversation",
+        recentConversations: "Recent Conversations",
+        allConversations: "All Conversations",
+        allConversationsMeta: "Show all messages",
+        messageCountSuffix: "msgs",
+        noRecents: "No recent conversations.",
+        search: "Search messages",
+        hello: "Hello,",
+        subtitle: "Your personal healthcare command center.",
+        welcomeKicker: "Health Overview",
+        metricsKicker: "Performance Snapshot",
+        symptomKicker: "Trend Intelligence",
+        aiKicker: "Smart Recommendations",
+        historyKicker: "Session Archive",
+        messagesKicker: "Message Timeline",
+        activeConversations: "Active Conversations",
+        criticalAlerts: "Critical Alerts",
+        openChat: "Open Chat",
+        export: "Export",
+        metrics: "Health Metrics",
+        total: "Total Msg",
+        conversations: "Conversations",
+        labs: "Lab Reports",
+        alerts: "Alerts",
+        symptoms: "Symptom Frequency",
+        allRoles: "All Roles",
+        user: "User",
+        assistant: "Assistant",
+        noSymptoms: "No symptom trends yet. Start chatting to build metrics.",
+        aiTitle: "Wellness AI Chatbot",
+        goChatbot: "Go to Chatbot",
+        history: "Conversation History",
+        id: "ID",
+        language: "Language",
+        messages: "Messages",
+        start: "Start",
+        lastUpdate: "Last Update",
+        noConversations: "No conversations found.",
+      },
+      gujarati: {
+        title: "હેલ્થકેર ડેશબોર્ડ",
+        appName: "\u0ab9\u0ac7\u0ab2\u0acd\u0aa5\u0a95\u0ac7\u0ab0 AI",
+        chat: "ચેટ",
+        logout: "લૉગઆઉટ",
+        newConversation: "\u0aa8\u0ab5\u0ac0 \u0ab5\u0abe\u0aa4\u0a9a\u0ac0\u0aa4",
+        recentConversations: "\u0aa4\u0abe\u0a9c\u0ac7\u0aa4\u0ab0\u0aa8\u0ac0 \u0ab5\u0abe\u0aa4\u0a9a\u0ac0\u0aa4\u0acb",
+        allConversations: "\u0aac\u0aa7\u0ac0 \u0ab5\u0abe\u0aa4\u0a9a\u0ac0\u0aa4\u0acb",
+        allConversationsMeta: "\u0aac\u0aa7\u0abe \u0ab8\u0a82\u0aa6\u0ac7\u0ab6\u0acb \u0aa6\u0ac7\u0a96\u0abe\u0aa1\u0acb",
+        messageCountSuffix: "\u0ab8\u0a82\u0aa6\u0ac7\u0ab6",
+        noRecents: "\u0aa4\u0abe\u0a9c\u0ac7\u0aa4\u0ab0\u0aa8\u0ac0 \u0a95\u0acb\u0a88 \u0ab5\u0abe\u0aa4\u0a9a\u0ac0\u0aa4 \u0aa8\u0aa5\u0ac0.",
+        search: "સંદેશ શોધો",
+        hello: "નમસ્તે,",
+        subtitle: "તમારું વ્યક્તિગત હેલ્થકેર કમાન્ડ સેન્ટર.",
+        welcomeKicker: "હેલ્થ ઓવરવ્યૂ",
+        metricsKicker: "પરફોર્મન્સ સ્નેપશોટ",
+        symptomKicker: "ટ્રેન્ડ ઇન્ટેલિજન્સ",
+        aiKicker: "સ્માર્ટ ભલામણો",
+        historyKicker: "સેશન આર્કાઇવ",
+        messagesKicker: "મેસેજ ટાઇમલાઇન",
+        activeConversations: "સક્રિય વાતચીત",
+        criticalAlerts: "મહત્વપૂર્ણ એલર્ટ",
+        openChat: "ચેટ ખોલો",
+        export: "એક્સપોર્ટ",
+        metrics: "હેલ્થ મેટ્રિક્સ",
+        total: "કુલ સંદેશ",
+        conversations: "વાતચીત",
+        labs: "લેબ રિપોર્ટ",
+        alerts: "એલર્ટ",
+        symptoms: "લક્ષણ આવર્તન",
+        allRoles: "બધી ભૂમિકાઓ",
+        user: "વપરાશકર્તા",
+        assistant: "સહાયક",
+        noSymptoms: "હજુ લક્ષણ ટ્રેન્ડ નથી. મેટ્રિક્સ માટે ચેટ શરૂ કરો.",
+        aiTitle: "વેલનેસ AI ચેટબોટ",
+        goChatbot: "ચેટબોટ પર જાઓ",
+        history: "વાતચીત ઇતિહાસ",
+        id: "આઈડી",
+        language: "ભાષા",
+        messages: "સંદેશો",
+        start: "શરૂઆત",
+        lastUpdate: "છેલ્લું અપડેટ",
+        noConversations: "કોઈ વાતચીત મળી નથી.",
+      },
+      hindi: {
+        title: "हेल्थकेयर डैशबोर्ड",
+        appName: "\u0939\u0947\u0932\u094d\u0925\u0915\u0947\u092f\u0930 AI",
+        chat: "चैट",
+        logout: "लॉगआउट",
+        newConversation: "\u0928\u0908 \u092c\u093e\u0924\u091a\u0940\u0924",
+        recentConversations: "\u0939\u093e\u0932 \u0915\u0940 \u092c\u093e\u0924\u091a\u0940\u0924\u0947\u0902",
+        allConversations: "\u0938\u092d\u0940 \u092c\u093e\u0924\u091a\u0940\u0924",
+        allConversationsMeta: "\u0938\u092d\u0940 \u0938\u0902\u0926\u0947\u0936 \u0926\u093f\u0916\u093e\u090f\u0902",
+        messageCountSuffix: "\u0938\u0902\u0926\u0947\u0936",
+        noRecents: "\u0939\u093e\u0932 \u0915\u0940 \u0915\u094b\u0908 \u092c\u093e\u0924\u091a\u0940\u0924 \u0928\u0939\u0940\u0902 \u0939\u0948\u0964",
+        search: "संदेश खोजें",
+        hello: "नमस्ते,",
+        subtitle: "आपका व्यक्तिगत हेल्थकेयर कमांड सेंटर।",
+        welcomeKicker: "हेल्थ ओवरव्यू",
+        metricsKicker: "परफॉर्मेंस स्नैपशॉट",
+        symptomKicker: "ट्रेंड इंटेलिजेंस",
+        aiKicker: "स्मार्ट सिफारिशें",
+        historyKicker: "सेशन आर्काइव",
+        messagesKicker: "मैसेज टाइमलाइन",
+        activeConversations: "सक्रिय बातचीत",
+        criticalAlerts: "गंभीर अलर्ट",
+        openChat: "चैट खोलें",
+        export: "एक्सपोर्ट",
+        metrics: "हेल्थ मेट्रिक्स",
+        total: "कुल संदेश",
+        conversations: "बातचीत",
+        labs: "लैब रिपोर्ट",
+        alerts: "अलर्ट",
+        symptoms: "लक्षण आवृत्ति",
+        allRoles: "सभी भूमिकाएँ",
+        user: "यूज़र",
+        assistant: "असिस्टेंट",
+        noSymptoms: "अभी लक्षण ट्रेंड नहीं है। मेट्रिक्स के लिए चैट शुरू करें।",
+        aiTitle: "वेलनेस AI चैटबॉट",
+        goChatbot: "चैटबॉट पर जाएँ",
+        history: "बातचीत इतिहास",
+        id: "आईडी",
+        language: "भाषा",
+        messages: "संदेश",
+        start: "शुरुआत",
+        lastUpdate: "अंतिम अपडेट",
+        noConversations: "कोई बातचीत नहीं मिली।",
+      },
+    };
+
+    function fixMojibakeText(value) {
+      if (typeof value !== "string") return value;
+      if (!/[Ãà]/.test(value)) return value;
+      try {
+        return decodeURIComponent(escape(value));
+      } catch (error) {
+        return value;
+      }
+    }
+
+    function normalizeDashboardLocaleText() {
+      ["gujarati", "hindi"].forEach((lang) => {
+        const pack = dashboardText[lang];
+        if (!pack) return;
+        Object.keys(pack).forEach((key) => {
+          pack[key] = fixMojibakeText(pack[key]);
+        });
+      });
+    }
+
+    normalizeDashboardLocaleText();
+
+    function applyDashboardTranslations() {
+      const t = dashboardText[dashboardLang] || dashboardText.english;
+      document.getElementById('page-title').textContent = t.title;
+      const railTitle = document.getElementById('rail-brand-title');
+      if (railTitle) railTitle.textContent = t.appName || dashboardText.english.appName;
+      document.getElementById('rail-chat-btn').title = t.chat;
+      document.getElementById('rail-logout-btn').title = t.logout;
+      const newConv = document.getElementById('new-conversation-label');
+      if (newConv) newConv.textContent = t.newConversation || "New Conversation";
+      const recentTitle = document.getElementById('recent-conversations-title');
+      if (recentTitle) recentTitle.textContent = t.recentConversations || "Recent Conversations";
+      const allConv = document.getElementById('all-conversations-label');
+      if (allConv) allConv.textContent = t.allConversations || "All Conversations";
+      const allConvMeta = document.getElementById('all-conversations-meta');
+      if (allConvMeta) allConvMeta.textContent = t.allConversationsMeta || "Show all messages";
+      document.getElementById('search').placeholder = t.search;
+      document.getElementById('dashboard-highlight-label').textContent = t.activeConversations || dashboardText.english.activeConversations;
+      document.getElementById('dashboard-alert-label').textContent = t.criticalAlerts || dashboardText.english.criticalAlerts;
+      document.getElementById('welcome-kicker').textContent = t.welcomeKicker || dashboardText.english.welcomeKicker;
+      document.getElementById('welcome-hello').textContent = t.hello;
+      document.getElementById('welcome-subtitle').textContent = t.subtitle;
+      document.getElementById('open-chat-btn').innerHTML = '<i class="fas fa-stethoscope"></i><span>' + t.openChat + '</span>';
+      document.getElementById('export-btn').innerHTML = '<i class="fas fa-download"></i><span>' + t.export + '</span>';
+      document.getElementById('metrics-kicker').textContent = t.metricsKicker || dashboardText.english.metricsKicker;
+      document.getElementById('metrics-title').textContent = t.metrics;
+      document.getElementById('m-total').textContent = t.total;
+      document.getElementById('m-conversations').textContent = t.conversations;
+      document.getElementById('m-labs').textContent = t.labs;
+      document.getElementById('m-alerts').textContent = t.alerts;
+      document.getElementById('symptom-kicker').textContent = t.symptomKicker || dashboardText.english.symptomKicker;
+      document.getElementById('symptom-title').textContent = t.symptoms;
+      document.getElementById('role-all').textContent = t.allRoles;
+      document.getElementById('role-user').textContent = t.user;
+      document.getElementById('role-assistant').textContent = t.assistant;
+      const noSymptoms = document.getElementById('no-symptoms');
+      if (noSymptoms) noSymptoms.textContent = t.noSymptoms;
+      document.getElementById('ai-kicker').textContent = t.aiKicker || dashboardText.english.aiKicker;
+      document.getElementById('ai-title').textContent = t.aiTitle;
+      document.getElementById('go-chatbot-btn').innerHTML = '<i class="fas fa-robot"></i><span>' + t.goChatbot + '</span>';
+      document.getElementById('history-kicker').textContent = t.historyKicker || dashboardText.english.historyKicker;
+      document.getElementById('history-title').textContent = t.history;
+      document.getElementById('th-id').textContent = t.id;
+      document.getElementById('th-language').textContent = t.language;
+      document.getElementById('th-messages').textContent = t.messages;
+      document.getElementById('th-start').textContent = t.start;
+      document.getElementById('th-last').textContent = t.lastUpdate;
+      document.getElementById('messages-kicker').textContent = t.messagesKicker || dashboardText.english.messagesKicker;
+      const noConversations = document.getElementById('no-conversations');
+      if (noConversations) noConversations.textContent = t.noConversations;
+      const noRecents = document.getElementById('no-recents');
+      if (noRecents) noRecents.textContent = t.noRecents || "No recent conversations.";
+      document.querySelectorAll('.conversation-meta[data-count]').forEach((meta) => {
+        const lang = meta.dataset.language || 'unknown';
+        const count = meta.dataset.count || '0';
+        meta.textContent = `#${lang} | ${count} ${t.messageCountSuffix || 'msgs'}`;
+      });
+    }
+
+    applyDashboardTranslations();
+
+    function initDashboardDepth() {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const tiltTargets = document.querySelectorAll("[data-tilt]");
+      tiltTargets.forEach((target) => {
+        target.addEventListener("pointermove", (event) => {
+          const rect = target.getBoundingClientRect();
+          const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+          const y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+          target.style.setProperty("--tilt-x", `${(-y * 3.2).toFixed(2)}deg`);
+          target.style.setProperty("--tilt-y", `${(x * 3.8).toFixed(2)}deg`);
+        });
+        target.addEventListener("pointerleave", () => {
+          target.style.setProperty("--tilt-x", "0deg");
+          target.style.setProperty("--tilt-y", "0deg");
+        });
+      });
+    }
+
+    initDashboardDepth();
+
+    function initDashboardReveal() {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const targets = document.querySelectorAll(".reveal-on-scroll");
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+      targets.forEach((el) => observer.observe(el));
+      document.querySelectorAll(".reveal-on-load").forEach((el) => {
+        requestAnimationFrame(() => el.classList.add("is-visible"));
+      });
+    }
+
+    initDashboardReveal();
+
+    function setConversationFilter(cid, element) {
+      selectedConversationId = cid || "all";
+      document.querySelectorAll('.conversation-item').forEach((item) => item.classList.remove('active'));
+      if (element) element.classList.add('active');
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const query = (document.getElementById('search').value || '').toLowerCase();
+      const role = document.getElementById('roleFilter').value;
+      const items = document.querySelectorAll('.message-item');
+      items.forEach((item) => {
+        const cidOk = selectedConversationId === 'all' || item.dataset.cid === selectedConversationId;
+        const roleOk = role === 'all' || item.dataset.role === role;
+        const textOk = !query || (item.dataset.text || '').includes(query);
+        item.style.display = cidOk && roleOk && textOk ? 'block' : 'none';
+      });
+    }
+
+    function startNewConversation() {
+      fetch('/new_conversation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      })
+        .then((res) => res.json())
+        .then(() => {
+          window.location.href = '/chat';
+        })
+        .catch(() => {
+          window.location.href = '/chat';
+        });
+    }
+
+    function openConversation(cid) {
+      if (!cid) return;
+      window.location.href = `/chat?conversation_id=${encodeURIComponent(cid)}`;
+    }
+
+    function exportData() {
+      fetch('/dashboard/export')
+        .then((res) => res.json())
+        .then((data) => {
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'health-dashboard-export.json';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="auth-page-title">Healthcare Auth</title>
+  <link rel="stylesheet" href="{{ static_asset('auth.css') }}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    .language-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(8, 24, 40, 0.24);
+      backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.3s ease;
+    }
+    .language-gate.show {
+      display: flex;
+    }
+    .language-gate-card {
+      width: min(480px, 100%);
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid rgba(17, 48, 78, 0.12);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 24px 60px rgba(8, 24, 40, 0.16);
+      text-align: center;
+    }
+    .language-gate-title {
+      margin: 0 0 8px;
+      font-size: 1.6rem;
+      background: linear-gradient(135deg, #0b2439 0%, #057f8c 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 800;
+    }
+    .language-gate-subtitle {
+      margin: 0 0 22px;
+      color: #475569;
+      font-size: 0.98rem;
+    }
+    .language-options {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .language-option {
+      border: 1.5px solid rgba(17, 48, 78, 0.14);
+      background: linear-gradient(135deg, #ffffff 0%, #f3fbff 100%);
+      border-radius: 12px;
+      padding: 16px 12px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #1e293b;
+      transition: all 0.25s ease;
+    }
+    .language-option:hover {
+      background: linear-gradient(135deg, #ebf8fa 0%, #dff3f6 100%);
+      border-color: #057f8c;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(5, 127, 140, 0.2);
+    }
+    @media (max-width: 640px) {
+      .language-options {
+        grid-template-columns: 1fr;
+      }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <span class="orb orb-a"></span>
+    <span class="orb orb-b"></span>
+    <span class="orb orb-c"></span>
+    <span class="grid"></span>
+  </div>
+  <div id="language-gate" class="language-gate" aria-modal="true" role="dialog">
+    <div class="language-gate-card">
+      <h2 id="gate-title" class="language-gate-title">Select Language</h2>
+      <p id="gate-subtitle" class="language-gate-subtitle">Choose once to continue across the website.</p>
+      <div class="language-options">
+        <button class="language-option" type="button" onclick="chooseStartupLanguage('english')">
+          <i class="fas fa-globe"></i><br/>English
+        </button>
+        <button class="language-option" type="button" onclick="chooseStartupLanguage('gujarati')">
+          <i class="fas fa-india"></i><br/>ગુજરાતી
+        </button>
+        <button class="language-option" type="button" onclick="chooseStartupLanguage('hindi')">
+          <i class="fas fa-hands-praying"></i><br/>हिंदी
+        </button>
+      </div>
+      <p id="language-gate-error" class="msg error" style="margin-top:16px;"></p>
+    </div>
+  </div>
+
+  <main class="auth-shell">
+    <section class="intro-card">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <p id="intro-eyebrow" class="intro-eyebrow">Private AI-Powered Care Companion</p>
+      <h1 id="intro-title">Healthcare AI Hub</h1>
+      <p id="intro-subtitle">Login or create account to open your health dashboard and continue your chatbot conversations securely.</p>
+      <ul>
+        <li id="intro-p1"><i class="fas fa-chart-line"></i> Real-time dashboard insights</li>
+        <li id="intro-p2"><i class="fas fa-notes-medical"></i> Lab report + symptom tracking</li>
+        <li id="intro-p3"><i class="fas fa-user-shield"></i> Private account based history</li>
+      </ul>
+      <div class="intro-stats">
+        <div class="intro-stat">
+          <span class="intro-stat-value">24/7</span>
+          <span id="intro-stat-1" class="intro-stat-label">Assistant availability</span>
+        </div>
+        <div class="intro-stat">
+          <span class="intro-stat-value">3</span>
+          <span id="intro-stat-2" class="intro-stat-label">Supported languages</span>
+        </div>
+        <div class="intro-stat">
+          <span class="intro-stat-value">100%</span>
+          <span id="intro-stat-3" class="intro-stat-label">Session privacy focus</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="auth-card">
+      <div class="auth-card-head">
+        <p id="auth-eyebrow" class="auth-eyebrow">Secure Access</p>
+        <h2 id="auth-heading">Welcome Back</h2>
+        <p id="auth-subtitle">Sign in to continue your personalized healthcare journey.</p>
+      </div>
+      <div class="tabs">
+        <button id="tab-login" class="tab active" onclick="showTab('login')">
+          <i class="fas fa-sign-in-alt"></i> Login
+        </button>
+        <button id="tab-signup" class="tab" onclick="showTab('signup')">
+          <i class="fas fa-user-plus"></i> Signup
+        </button>
+      </div>
+
+      <form id="login-form" class="form active">
+        <label id="login-email-label">Email</label>
+        <div class="input-group">
+          <i class="fas fa-envelope"></i>
+          <input id="login-email" type="email" placeholder="you@example.com" required />
+        </div>
+        <label id="login-password-label">Password</label>
+        <div class="input-group">
+          <i class="fas fa-lock"></i>
+          <input id="login-password" type="password" placeholder="Enter password" required />
+        </div>
+        <button id="login-submit" type="submit" class="submit">
+          <i class="fas fa-sign-in-alt"></i> Login to Dashboard
+        </button>
+      </form>
+
+      <form id="signup-form" class="form">
+        <label id="signup-name-label">Full Name</label>
+        <div class="input-group">
+          <i class="fas fa-user"></i>
+          <input id="signup-name" type="text" placeholder="Your full name" required />
+        </div>
+        <label id="signup-email-label">Email</label>
+        <div class="input-group">
+          <i class="fas fa-envelope"></i>
+          <input id="signup-email" type="email" placeholder="you@example.com" required />
+        </div>
+        <label id="signup-password-label">Password</label>
+        <div class="input-group">
+          <i class="fas fa-lock"></i>
+          <input id="signup-password" type="password" placeholder="At least 6 characters" required />
+        </div>
+        <button id="signup-submit" type="submit" class="submit">
+          <i class="fas fa-user-plus"></i> Create Account
+        </button>
+      </form>
+
+      <p id="auth-msg" class="msg"></p>
+    </section>
+  </main>
+
+  <script>
+    const siteLanguage = "{{ language or '' }}";
+    let currentLanguage = siteLanguage || "english";
+    function fixMojibakeText(value) {
+      if (typeof value !== 'string') return value;
+      if (!/[Ãà]/.test(value)) return value;
+      try {
+        return decodeURIComponent(escape(value));
+      } catch (error) {
+        return value;
+      }
+    }
+
+    const authText = {
+      english: {
+        pageTitle: "Healthcare Auth",
+        gateTitle: "Select Language",
+        gateSubtitle: "Choose once to continue across the website.",
+        introEyebrow: "Private AI-Powered Care Companion",
+        introTitle: "Healthcare AI Hub",
+        introSubtitle: "Login or create account to open your health dashboard and continue your chatbot conversations securely.",
+        p1: "Real-time dashboard insights",
+        p2: "Lab report + symptom tracking",
+        p3: "Private account based history",
+        stat1: "Assistant availability",
+        stat2: "Supported languages",
+        stat3: "Session privacy focus",
+        authEyebrow: "Secure Access",
+        authHeading: "Welcome Back",
+        authSubtitle: "Sign in to continue your personalized healthcare journey.",
+        login: "Login",
+        signup: "Signup",
+        email: "Email",
+        password: "Password",
+        fullName: "Full Name",
+        loginBtn: "Login to Dashboard",
+        signupBtn: "Create Account",
+        emailPlaceholder: "you@example.com",
+        namePlaceholder: "Your full name",
+        passwordPlaceholder: "Enter password",
+        signupPasswordPlaceholder: "At least 6 characters",
+        loginFailed: "Login failed. Please check your credentials.",
+        signupFailed: "Signup failed. Please try again.",
+        accountCreated: "Account created! Redirecting...",
+      },
+      gujarati: {
+        pageTitle: "હેલ્થકેર ઓથ",
+        gateTitle: "ભાષા પસંદ કરો",
+        gateSubtitle: "સંપૂર્ણ વેબસાઇટ માટે એકવાર પસંદ કરો.",
+        introEyebrow: "ખાનગી AI આધારિત કેર કમ્પેનિયન",
+        introTitle: "હેલ્થકેર AI હબ",
+        introSubtitle: "તમારો હેલ્થ ડેશબોર્ડ અને ચેટ ઇતિહાસ ચાલુ રાખવા માટે લોગિન અથવા સાઇનઅપ કરો.",
+        p1: "રીઅલ-ટાઇમ ડેશબોર્ડ ઇનસાઇટ્સ",
+        p2: "લેબ રિપોર્ટ + લક્ષણ ટ્રેકિંગ",
+        p3: "ખાનગી એકાઉન્ટ આધારિત ઇતિહાસ",
+        stat1: "સહાયક ઉપલબ્ધતા",
+        stat2: "સમર્થિત ભાષાઓ",
+        stat3: "સેશન પ્રાઇવસી ફોકસ",
+        authEyebrow: "સિક્યોર ઍક્સેસ",
+        authHeading: "પાછા આવકાર",
+        authSubtitle: "તમારી વ્યક્તિગત હેલ્થકેર યાત્રા ચાલુ રાખવા સાઇન ઇન કરો.",
+        login: "લોગિન",
+        signup: "સાઇનઅપ",
+        email: "ઈમેલ",
+        password: "પાસવર્ડ",
+        fullName: "પૂર્ણ નામ",
+        loginBtn: "ડેશબોર્ડમાં લોગિન કરો",
+        signupBtn: "એકાઉન્ટ બનાવો",
+        emailPlaceholder: "you@example.com",
+        namePlaceholder: "તમારું સંપૂર્ણ નામ",
+        passwordPlaceholder: "પાસવર્ડ દાખલ કરો",
+        signupPasswordPlaceholder: "ઓછામાં ઓછા 6 અક્ષરો",
+        loginFailed: "લોગિન નિષ્ફળ. કૃપા કરીને તપાસો.",
+        signupFailed: "સાઇનઅપ નિષ્ફળ. કૃપા કરીને પ્રયત્ન કરો.",
+        accountCreated: "એકાઉન્ટ બન્યું! રીડાયરેક્ટ થઈ રહ્યું છે...",
+      },
+      hindi: {
+        pageTitle: "हेल्थकेयर ऑथ",
+        gateTitle: "भाषा चुनें",
+        gateSubtitle: "पूरी वेबसाइट के लिए एक बार भाषा चुनें।",
+        introEyebrow: "प्राइवेट AI-पावर्ड केयर कम्पैनियन",
+        introTitle: "हेल्थकेयर AI हब",
+        introSubtitle: "अपना हेल्थ डैशबोर्ड और चैट हिस्ट्री जारी रखने के लिए लॉगिन या साइनअप करें।",
+        p1: "रियल-टाइम डैशबोर्ड इनसाइट्स",
+        p2: "लैब रिपोर्ट + लक्षण ट्रैकिंग",
+        p3: "प्राइवेट अकाउंट आधारित हिस्ट्री",
+        stat1: "सहायक उपलब्धता",
+        stat2: "समर्थित भाषाएँ",
+        stat3: "सेशन प्राइवेसी फोकस",
+        authEyebrow: "सिक्योर एक्सेस",
+        authHeading: "वेलकम बैक",
+        authSubtitle: "अपनी व्यक्तिगत हेल्थकेयर यात्रा जारी रखने के लिए साइन इन करें।",
+        login: "लॉगिन",
+        signup: "साइनअप",
+        email: "ईमेल",
+        password: "पासवर्ड",
+        fullName: "पूरा नाम",
+        loginBtn: "डैशबोर्ड में लॉगिन करें",
+        signupBtn: "अकाउंट बनाएं",
+        emailPlaceholder: "you@example.com",
+        namePlaceholder: "आपका पूरा नाम",
+        passwordPlaceholder: "पासवर्ड दर्ज करें",
+        signupPasswordPlaceholder: "कम से कम 6 अक्षर",
+        loginFailed: "लॉगिन विफल। कृपया जांचें।",
+        signupFailed: "साइनअप विफल। कृपया पुनः प्रयास करें।",
+        accountCreated: "अकाउंट बना! रीडायरेक्ट हो रहा है...",
+      },
+    };
+
+    function normalizeAuthLocaleText() {
+      ['gujarati', 'hindi'].forEach((lang) => {
+        const pack = authText[lang];
+        if (!pack) return;
+        Object.keys(pack).forEach((key) => {
+          pack[key] = fixMojibakeText(pack[key]);
+        });
+      });
+    }
+
+    normalizeAuthLocaleText();
+
+    function t() {
+      return authText[currentLanguage] || authText.english;
+    }
+
+    function applyAuthLanguage() {
+      const s = t();
+      document.getElementById('auth-page-title').textContent = s.pageTitle;
+      document.getElementById('gate-title').textContent = s.gateTitle;
+      document.getElementById('gate-subtitle').textContent = s.gateSubtitle;
+      document.getElementById('intro-eyebrow').textContent = s.introEyebrow || authText.english.introEyebrow;
+      document.getElementById('intro-title').textContent = s.introTitle;
+      document.getElementById('intro-subtitle').textContent = s.introSubtitle;
+      document.getElementById('intro-p1').innerHTML = '<i class="fas fa-chart-line"></i> ' + s.p1;
+      document.getElementById('intro-p2').innerHTML = '<i class="fas fa-notes-medical"></i> ' + s.p2;
+      document.getElementById('intro-p3').innerHTML = '<i class="fas fa-user-shield"></i> ' + s.p3;
+      document.getElementById('intro-stat-1').textContent = s.stat1 || authText.english.stat1;
+      document.getElementById('intro-stat-2').textContent = s.stat2 || authText.english.stat2;
+      document.getElementById('intro-stat-3').textContent = s.stat3 || authText.english.stat3;
+      document.getElementById('auth-eyebrow').textContent = s.authEyebrow || authText.english.authEyebrow;
+      document.getElementById('auth-heading').textContent = s.authHeading || authText.english.authHeading;
+      document.getElementById('auth-subtitle').textContent = s.authSubtitle || authText.english.authSubtitle;
+      document.getElementById('tab-login').innerHTML = '<i class="fas fa-sign-in-alt"></i> ' + s.login;
+      document.getElementById('tab-signup').innerHTML = '<i class="fas fa-user-plus"></i> ' + s.signup;
+      document.getElementById('login-email-label').textContent = s.email;
+      document.getElementById('login-password-label').textContent = s.password;
+      document.getElementById('signup-name-label').textContent = s.fullName;
+      document.getElementById('signup-email-label').textContent = s.email;
+      document.getElementById('signup-password-label').textContent = s.password;
+      document.getElementById('login-submit').innerHTML = '<i class="fas fa-sign-in-alt"></i> ' + s.loginBtn;
+      document.getElementById('signup-submit').innerHTML = '<i class="fas fa-user-plus"></i> ' + s.signupBtn;
+      document.getElementById('login-email').placeholder = s.emailPlaceholder;
+      document.getElementById('signup-email').placeholder = s.emailPlaceholder;
+      document.getElementById('signup-name').placeholder = s.namePlaceholder;
+      document.getElementById('login-password').placeholder = s.passwordPlaceholder;
+      document.getElementById('signup-password').placeholder = s.signupPasswordPlaceholder;
+    }
+
+    function showLanguageGate() {
+      const gate = document.getElementById('language-gate');
+      if (gate) gate.classList.add('show');
+    }
+
+    async function chooseStartupLanguage(language) {
+      const err = document.getElementById('language-gate-error');
+      if (err) err.textContent = '';
+      try {
+        const res = await fetch('/set_site_language', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ language }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          if (err) err.textContent = data.error || 'Failed to set language';
+          return;
+        }
+        currentLanguage = language;
+        applyAuthLanguage();
+        const gate = document.getElementById('language-gate');
+        if (gate) gate.classList.remove('show');
+      } catch (e) {
+        if (err) err.textContent = 'Network error. Please try again.';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      applyAuthLanguage();
+      showLanguageGate();
+    });
+
+    function showTab(tab) {
+      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+      document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+      document.getElementById('login-form').classList.toggle('active', tab === 'login');
+      document.getElementById('signup-form').classList.toggle('active', tab === 'signup');
+      document.getElementById('auth-msg').textContent = '';
+    }
+
+    function setMessage(text, isError = true) {
+      const el = document.getElementById('auth-msg');
+      el.innerHTML = isError ? '<i class="fas fa-exclamation-circle"></i> ' + text : '<i class="fas fa-check-circle"></i> ' + text;
+      el.classList.toggle('error', isError);
+      el.classList.toggle('ok', !isError);
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setMessage(data.error || t().loginFailed);
+        return;
+      }
+      window.location.href = data.redirect || '/dashboard';
+    });
+
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('signup-name').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value;
+      const res = await fetch('/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setMessage(data.error || t().signupFailed);
+        return;
+      }
+      setMessage(t().accountCreated, false);
+      window.location.href = data.redirect || '/dashboard';
+    });
+  </script>
+</body>
+</html>

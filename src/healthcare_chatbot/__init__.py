@@ -1,0 +1,1 @@
+from healthcare_chatbot.core.app_factory import create_app
